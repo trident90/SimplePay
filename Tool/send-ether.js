@@ -1,15 +1,18 @@
-const hardhat = require("hardhat");
-const { ethers } = hardhat;
+const { ethers } = require("ethers");
 const fs = require("fs");
 
 async function main() {
   // keystore 파일 경로와 지갑 비밀번호
-  const keystorePath = "keystore/keystore.json";
+  const keystorePath = "../keystore/keystore.json";
   const password = process.env.KEYSTORE_PASSWORD || "";
 
-  // 대상 주소와 전송 금액
-  const toAddress = "0xeCC4e71B649A5f367d9Cf694D63Bf04bc6aaB0b6";   // <-- 목적지 주소
-  const amountInEth = "10.0";                  // <-- 전송할 금액 (ETH 단위)
+  // 커맨드라인 인자: node send-ether.js <toAddress> <amountInEth>
+  const args = process.argv.slice(2);
+  if (args.length < 2) {
+    console.error("사용법: node send-ether.js <목적지주소> <금액(ETH단위)>");
+    process.exit(1);
+  }
+  const [toAddress, amountInEth] = args;
 
   if (!password) {
     throw new Error("⚠️  환경변수 KEYSTORE_PASSWORD 를 설정하세요.");
@@ -22,8 +25,9 @@ async function main() {
   console.log("🔑 keystore 복호화 중...");
   const wallet = await ethers.Wallet.fromEncryptedJson(keystore, password);
 
-  // 3) Metadium dev RPC provider 연결
-  const provider = new ethers.JsonRpcProvider("https://api.gov.metadium.club");
+  // 3) RPC provider 연결 (환경 변수 사용)
+  const rpcUrl = process.env.RPC_URL || "https://api.gov.metadium.club";
+  const provider = new ethers.JsonRpcProvider(rpcUrl);
   const signer = wallet.connect(provider);
 
   console.log("지갑 주소:", await signer.getAddress());

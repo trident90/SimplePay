@@ -75,13 +75,23 @@ public class SimplePayDemoWithContracts {
             logger.warn("No ADMIN_PRIVATE_KEY provided, using default address: {}", adminAddress);
         }
         
-        // UserA, UserB를 위한 새 주소 생성 (시뮬레이션용)
-        userAAddress = "0x" + generateRandomAddress();
-        userBAddress = "0x" + generateRandomAddress();
-        
-        logger.info("Admin Address: {}", adminAddress);
-        logger.info("UserA Address: {}", userAAddress);
-        logger.info("UserB Address: {}", userBAddress);
+    // UserA, UserB 지갑을 keystore 파일에서 로드
+    // 프로젝트 홈은 Wallet이 아닌 그 위의 SimplePay 폴더
+    String walletDir = System.getProperty("user.dir");
+    String projectHome = new java.io.File(walletDir).getParent();
+    String keystoreDir = projectHome + "/keystore";
+    String userAKeyPath = keystoreDir + "/user_a";
+    String userBKeyPath = keystoreDir + "/user_b";
+    String password = "demo";
+
+    Credentials userACredentials = org.web3j.crypto.WalletUtils.loadCredentials(password, userAKeyPath);
+    Credentials userBCredentials = org.web3j.crypto.WalletUtils.loadCredentials(password, userBKeyPath);
+    userAAddress = userACredentials.getAddress();
+    userBAddress = userBCredentials.getAddress();
+
+    logger.info("Admin Address: {}", adminAddress);
+    logger.info("UserA Address: {}", userAAddress);
+    logger.info("UserB Address: {}", userBAddress);
         
         // 스마트 컨트랙트 인스턴스 생성
         if (ADMIN_PRIVATE_KEY != null) {
