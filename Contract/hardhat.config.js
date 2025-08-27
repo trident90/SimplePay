@@ -11,7 +11,7 @@ export default {
   networks: {
     hardhat: {},
     metadium: {
-      url: process.env.METADIUM_GOV_URL || "",
+      url: process.env.METADIUM_DEV_URL || "",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : []
     }
   },

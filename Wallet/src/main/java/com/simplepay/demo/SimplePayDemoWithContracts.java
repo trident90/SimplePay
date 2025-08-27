@@ -21,11 +21,35 @@ import java.util.concurrent.TimeUnit;
 public class SimplePayDemoWithContracts {
     private static final Logger logger = LoggerFactory.getLogger(SimplePayDemoWithContracts.class);
     
-    // 환경 변수에서 읽어올 값들
-    private static final String RPC_URL = System.getenv().getOrDefault("RPC_URL", "http://localhost:8545");
-    private static final String TOKEN_ADDRESS = System.getenv("TOKEN_ADDR");
-    private static final String GATEWAY_ADDRESS = System.getenv("GATEWAY_ADDR");
-    private static final String ADMIN_PRIVATE_KEY = System.getenv("ADMIN_PRIVATE_KEY");
+    // ../Contract/.env 파일에서 값 읽기
+    private static final java.util.Map<String, String> ENV = loadEnv();
+    private static final String RPC_URL = ENV.getOrDefault("METADIUM_DEV_URL", "https://api.metadium.com/dev");
+    private static final String TOKEN_ADDRESS = ENV.get("TOKEN_ADDR");
+    private static final String GATEWAY_ADDRESS = ENV.get("GATEWAY_ADDR");
+    private static final String ADMIN_PRIVATE_KEY = ENV.get("PRIVATE_KEY");
+
+    private static java.util.Map<String, String> loadEnv() {
+        java.util.Map<String, String> env = new java.util.HashMap<>();
+        try {
+            String walletDir = System.getProperty("user.dir");
+            String projectHome = new java.io.File(walletDir).getParent();
+            java.nio.file.Path envPath = java.nio.file.Paths.get(projectHome, "Contract", ".env");
+            java.util.List<String> lines = java.nio.file.Files.readAllLines(envPath);
+            for (String line : lines) {
+                line = line.trim();
+                if (line.isEmpty() || line.startsWith("#")) continue;
+                int idx = line.indexOf('=');
+                if (idx > 0) {
+                    String key = line.substring(0, idx).trim();
+                    String value = line.substring(idx + 1).trim();
+                    env.put(key, value);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println(".env 파일을 읽을 수 없습니다: " + e.getMessage());
+        }
+        return env;
+    }
     
     private Web3j web3j;
     private String adminAddress;
@@ -82,7 +106,7 @@ public class SimplePayDemoWithContracts {
     String keystoreDir = projectHome + "/keystore";
     String userAKeyPath = keystoreDir + "/user_a";
     String userBKeyPath = keystoreDir + "/user_b";
-    String password = "demo";
+    String password = "iitp69";
 
     Credentials userACredentials = org.web3j.crypto.WalletUtils.loadCredentials(password, userAKeyPath);
     Credentials userBCredentials = org.web3j.crypto.WalletUtils.loadCredentials(password, userBKeyPath);
