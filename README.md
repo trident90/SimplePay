@@ -106,8 +106,8 @@ mvn clean compile
 
 ```bash
 export RPC_URL="https://api.metadium.com/dev"
-export TOKEN_ADDR="0x0fB92250C52A98cAe05310476b650BC22D2B8841"
-export GATEWAY_ADDR="0x68602f3F6528c8EC1f2De65a3EBA9d2EDd0eA1e7"
+export TOKEN_ADDR="0x8982D9EE19466fF1AEEa694894d285bF2d585c84"
+export GATEWAY_ADDR="0x489E98a3C3D23A18113df4fd0aa810aA68FdB833"
 export ADMIN_PRIVATE_KEY="your_private_key_here"
 ```
 
@@ -121,8 +121,8 @@ mvn exec:java -Dexec.mainClass="com.simplepay.demo.SimplePayDemo"
 #### 실제 컨트랙트와 상호작용하는 데모 실행:
 ```bash
 RPC_URL="https://api.metadium.com/dev" \
-TOKEN_ADDR="0x0fB92250C52A98cAe05310476b650BC22D2B8841" \
-GATEWAY_ADDR="0x68602f3F6528c8EC1f2De65a3EBA9d2EDd0eA1e7" \
+TOKEN_ADDR="0x8982D9EE19466fF1AEEa694894d285bF2d585c84" \
+GATEWAY_ADDR="0x489E98a3C3D23A18113df4fd0aa810aA68FdB833" \
 ADMIN_PRIVATE_KEY="your_private_key_here" \
 mvn exec:java -Dexec.mainClass="com.simplepay.demo.SimplePayDemoWithContracts"
 ```
@@ -141,7 +141,6 @@ mvn exec:java -Dexec.mainClass="com.simplepay.demo.SimplePayDemoWithContracts"
 
 ### 키스토어 관리
 - 키스토어 파일은 `keystore/` 디렉토리에 저장
-- 개발용 기본 비밀번호: `iitp69`
 - 프로덕션에서는 강력한 비밀번호 사용 권장
 
 ## 트러블슈팅
