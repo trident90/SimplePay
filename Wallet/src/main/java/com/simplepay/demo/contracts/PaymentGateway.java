@@ -23,6 +23,12 @@ import org.web3j.tx.gas.ContractGasProvider;
  * PaymentGateway 스마트 컨트랙트를 위한 Java 래퍼 클래스
  */
 public class PaymentGateway extends Contract {
+    public RemoteCall<TransactionReceipt> mintTokenOnDeposit(String user, BigInteger amount) {
+    final Function function = new Function("mintTokenOnDeposit",
+        Arrays.asList(new Address(user), new Uint256(amount)),
+        Collections.<TypeReference<?>>emptyList());
+        return executeRemoteCallTransaction(function);
+    }
     
     protected PaymentGateway(String contractAddress, Web3j web3j, Credentials credentials, ContractGasProvider contractGasProvider) {
         super("", contractAddress, web3j, credentials, contractGasProvider);
@@ -33,37 +39,37 @@ public class PaymentGateway extends Contract {
     }
 
     public RemoteCall<TransactionReceipt> requestWithdraw(BigInteger amount) {
-        final Function function = new Function("requestWithdraw", 
-                Arrays.<Type>asList(new Uint256(amount)), 
-                Collections.<TypeReference<?>>emptyList());
+    final Function function = new Function("requestWithdraw", 
+        Arrays.asList(new Uint256(amount)), 
+        Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallTransaction(function);
     }
 
     public RemoteFunctionCall<String> tokenAddress() {
-        final Function function = new Function("tokenAddress", 
-                Arrays.<Type>asList(), 
-                Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
+    final Function function = new Function("tokenAddress", 
+        Arrays.asList(), 
+        Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
         return executeRemoteCallSingleValueReturn(function, String.class);
     }
 
     public RemoteFunctionCall<Boolean> paused() {
-        final Function function = new Function("paused", 
-                Arrays.<Type>asList(), 
-                Arrays.<TypeReference<?>>asList(new TypeReference<Bool>() {}));
+    final Function function = new Function("paused", 
+        Arrays.asList(), 
+        Arrays.<TypeReference<?>>asList(new TypeReference<Bool>() {}));
         return executeRemoteCallSingleValueReturn(function, Boolean.class);
     }
 
     public RemoteCall<TransactionReceipt> pause() {
-        final Function function = new Function("pause", 
-                Arrays.<Type>asList(), 
-                Collections.<TypeReference<?>>emptyList());
+    final Function function = new Function("pause", 
+        Arrays.asList(), 
+        Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallTransaction(function);
     }
 
     public RemoteCall<TransactionReceipt> unpause() {
-        final Function function = new Function("unpause", 
-                Arrays.<Type>asList(), 
-                Collections.<TypeReference<?>>emptyList());
+    final Function function = new Function("unpause", 
+        Arrays.asList(), 
+        Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallTransaction(function);
     }
 

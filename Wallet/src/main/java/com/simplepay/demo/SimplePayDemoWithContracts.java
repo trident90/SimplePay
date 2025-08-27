@@ -147,96 +147,116 @@ public class SimplePayDemoWithContracts {
     }
     
     private void executeDemoFlow() throws Exception {
-        // 1. Admin -> UserA에게 1000 토큰 발행
-        logger.info("\n1. Minting 1000 tokens to UserA...");
-        mintTokens(userAAddress, new BigInteger("1000"));
+        // 0. UserA 현금 입금 시 토큰 발행 (오퍼레이터가 호출)
+        logger.info("\n0. UserA 현금 입금 시 토큰 발행...");
+        callMintTokenOnDeposit(userAAddress, new BigInteger("500"));
         
-        // 2. Admin에게 300 토큰 발행
+        // 1. UserB 현금 입금 시 토큰 발행
+        logger.info("\n1. UserB 현금 입금 시 토큰 발행...");
+        callMintTokenOnDeposit(userBAddress, new BigInteger("300"));
+        
+        // 2. Admin에게 300 토큰 발행 (운영 자금)
         logger.info("\n2. Minting 300 tokens to Admin...");
         mintTokens(adminAddress, new BigInteger("300"));
         
-        // 3. Admin -> UserB에게 150 토큰 전송
-        logger.info("\n3. Transferring 150 tokens from Admin to UserB...");
-        transferTokens(userBAddress, new BigInteger("150"));
+        // 3. UserA -> UserB에게 200 토큰 전송 (사용자간 P2P 거래)
+        logger.info("\n3. UserA transferring 200 tokens to UserB...");
+        logger.info("Note: Simulating UserA transfer via Admin (UserA has no ETH for gas)");
+        transferTokens(adminAddress, userBAddress, new BigInteger("200"));
         
-        // 4. Admin의 출금 요청 시뮬레이션
-        logger.info("\n4. Simulating withdrawal from Admin...");
-        simulateWithdrawal();
+        // 4. UserB의 200 토큰 출금 요청
+        logger.info("\n4. UserB requesting withdrawal of 200 tokens...");
+        logger.info("Note: Admin processing UserB's withdrawal request (UserB has no ETH for gas)");
+        simulateWithdrawal(new BigInteger("200"));
         
         // 최종 잔액 확인
         checkFinalBalances();
+    }
+    
+    // PaymentGateway의 mintTokenOnDeposit 호출
+    private void callMintTokenOnDeposit(String userAddress, BigInteger amount) throws Exception {
+        BigInteger amountInWei = amount.multiply(BigInteger.TEN.pow(18)); // 18 decimals
+        
+        if (gatewayContract != null) {
+            logger.info("{} balance before deposit: {}", userAddress, 
+                tokenContract.balanceOf(userAddress).send().divide(BigInteger.TEN.pow(18)));
+            
+            // CompletableFuture 제거하고 직접 호출
+            TransactionReceipt receipt = gatewayContract.mintTokenOnDeposit(userAddress, amountInWei).send();
+            logger.info("mintTokenOnDeposit to {} successful. TxHash: {}", userAddress, receipt != null ? receipt.getTransactionHash() : "ERROR");
+            
+            logger.info("{} balance after deposit: {}", userAddress, 
+                tokenContract.balanceOf(userAddress).send().divide(BigInteger.TEN.pow(18)));
+        } else {
+            logger.info("Simulating mintTokenOnDeposit to {} ({} tokens)", userAddress, amount);
+        }
     }
     
     private void mintTokens(String toAddress, BigInteger amount) throws Exception {
         BigInteger amountInWei = amount.multiply(BigInteger.TEN.pow(18)); // 18 decimals
         
         if (tokenContract != null) {
-            logger.info("PayToken instance address before balance check: {}", tokenContract.getContractAddress());
-            BigInteger adminBalanceBefore = tokenContract.balanceOf(adminAddress).send();
-            logger.info("Admin balance before minting to {}: {}", toAddress, 
-                adminBalanceBefore.divide(BigInteger.TEN.pow(18)));
+            BigInteger toAddressBalanceBefore = tokenContract.balanceOf(toAddress).send();
+            logger.info("{} balance before minting: {}", toAddress, toAddressBalanceBefore.divide(BigInteger.TEN.pow(18)));
             
+            // CompletableFuture 제거하고 직접 호출
             TransactionReceipt receipt = tokenContract.mint(toAddress, amountInWei).send();
-            logger.info("Mint to {} successful. Transaction hash: {}", toAddress, receipt.getTransactionHash());
+            logger.info("Mint to {} successful. Transaction hash: {}", toAddress, receipt != null ? receipt.getTransactionHash() : "ERROR");
             
-            logger.info("PayToken instance address after minting: {}", tokenContract.getContractAddress());
-            BigInteger adminBalanceAfter = tokenContract.balanceOf(adminAddress).send();
-            logger.info("Admin balance after minting: {}", adminBalanceAfter.divide(BigInteger.TEN.pow(18)));
+            BigInteger toAddressBalanceAfter = tokenContract.balanceOf(toAddress).send();
+            logger.info("{} balance after minting: {}", toAddress, toAddressBalanceAfter.divide(BigInteger.TEN.pow(18)));
         } else {
             logger.info("Simulating mint of {} tokens to {}", amount, toAddress);
             logger.info("Mint successful (simulated)");
         }
     }
     
-    private void transferTokens(String toAddress, BigInteger amount) throws Exception {
+    private void transferTokens(String fromAddress, String toAddress, BigInteger amount) throws Exception {
         BigInteger amountInWei = amount.multiply(BigInteger.TEN.pow(18));
-        
         if (tokenContract != null) {
-            logger.info("PayToken instance address before balance check: {}", tokenContract.getContractAddress());
-            BigInteger adminBalanceBefore = tokenContract.balanceOf(adminAddress).send();
-            logger.info("Admin balance before transfer: {}", adminBalanceBefore.divide(BigInteger.TEN.pow(18)));
-            
+            BigInteger toAddressBalanceBefore = tokenContract.balanceOf(toAddress).send();
+            logger.info("{} balance before transfer: {}", toAddress, toAddressBalanceBefore.divide(BigInteger.TEN.pow(18)));
+
+            // CompletableFuture 제거하고 직접 호출
             TransactionReceipt receipt = tokenContract.transfer(toAddress, amountInWei).send();
-            logger.info("Transfer successful. Transaction hash: {}", receipt.getTransactionHash());
-            
-            logger.info("PayToken instance address after transfer: {}", tokenContract.getContractAddress());
-            BigInteger adminBalanceAfter = tokenContract.balanceOf(adminAddress).send();
-            logger.info("Admin balance after transfer: {}", adminBalanceAfter.divide(BigInteger.TEN.pow(18)));
+            logger.info("Transfer successful (Admin -> UserB simulating UserA -> UserB). Transaction hash: {}", receipt != null ? receipt.getTransactionHash() : "ERROR");
+
+            BigInteger toAddressBalanceAfter = tokenContract.balanceOf(toAddress).send();
+            logger.info("{} balance after transfer: {}", toAddress, toAddressBalanceAfter.divide(BigInteger.TEN.pow(18)));
         } else {
-            logger.info("Simulating transfer of {} tokens to {}", amount, toAddress);
+            logger.info("Simulating transfer of {} tokens from {} to {}", amount, fromAddress, toAddress);
             logger.info("Transfer successful (simulated)");
         }
     }
     
-    private void simulateWithdrawal() throws Exception {
-        // 5초 지연
-        TimeUnit.SECONDS.sleep(5);
+    private void simulateWithdrawal(BigInteger amount) throws Exception {
+        // 1초 지연으로 단축
+        TimeUnit.SECONDS.sleep(1);
         
-        BigInteger withdrawAmount = new BigInteger("150").multiply(BigInteger.TEN.pow(18));
+        BigInteger withdrawAmount = amount.multiply(BigInteger.TEN.pow(18));
         
         if (tokenContract != null && gatewayContract != null) {
-            logger.info("PayToken instance address before balance check: {}", tokenContract.getContractAddress());
-            BigInteger adminBalanceBeforeWithdraw = tokenContract.balanceOf(adminAddress).send();
-            logger.info("Admin balance before withdrawal: {}", adminBalanceBeforeWithdraw.divide(BigInteger.TEN.pow(18)));
+            BigInteger userBBalanceBeforeWithdraw = tokenContract.balanceOf(userBAddress).send();
+            logger.info("UserB balance before withdrawal: {}", userBBalanceBeforeWithdraw.divide(BigInteger.TEN.pow(18)));
             
             BigInteger allowanceBefore = tokenContract.allowance(adminAddress, GATEWAY_ADDRESS).send();
-            logger.info("Allowance before withdrawal: {}", allowanceBefore.divide(BigInteger.TEN.pow(18)));
+            logger.info("Admin allowance before withdrawal: {}", allowanceBefore.divide(BigInteger.TEN.pow(18)));
             
-            // Approve 토큰 사용 허가
+            // Approve 토큰 사용 허가 (Admin이 대신 처리) - CompletableFuture 제거
             TransactionReceipt approveReceipt = tokenContract.approve(GATEWAY_ADDRESS, withdrawAmount).send();
-            logger.info("Approve transaction hash: {}", approveReceipt.getTransactionHash());
+            logger.info("Admin approve successful. Transaction hash: {}", approveReceipt != null ? approveReceipt.getTransactionHash() : "ERROR");
             
             BigInteger allowanceAfter = tokenContract.allowance(adminAddress, GATEWAY_ADDRESS).send();
-            logger.info("Allowance after approve: {}", allowanceAfter.divide(BigInteger.TEN.pow(18)));
+            logger.info("Admin allowance after approve: {}", allowanceAfter.divide(BigInteger.TEN.pow(18)));
             
-            // 출금 요청
+            // 출금 요청 (Admin이 UserB를 대신해서 처리) - CompletableFuture 제거
             TransactionReceipt withdrawReceipt = gatewayContract.requestWithdraw(withdrawAmount).send();
-            logger.info("Withdrawal request successful. Transaction hash: {}", withdrawReceipt.getTransactionHash());
+            logger.info("Withdrawal request successful (Admin processing UserB's withdrawal). Transaction hash: {}", withdrawReceipt != null ? withdrawReceipt.getTransactionHash() : "ERROR");
         } else {
-            logger.info("Simulating withdrawal of {} tokens", new BigInteger("150"));
-            logger.info("Allowance before withdrawal: 0");
-            logger.info("Approving {} tokens", new BigInteger("150"));
-            logger.info("Allowance after approve: {}", new BigInteger("150"));
+            logger.info("Simulating withdrawal of {} tokens", amount);
+            logger.info("Admin allowance before withdrawal: 0");
+            logger.info("Admin approving {} tokens", amount);
+            logger.info("Admin allowance after approve: {}", amount);
             logger.info("Withdrawal request successful (simulated)");
         }
     }
@@ -253,9 +273,9 @@ public class SimplePayDemoWithContracts {
             logger.info("UserA: {} PAY", userABalance.divide(BigInteger.TEN.pow(18)));
             logger.info("UserB: {} PAY", userBBalance.divide(BigInteger.TEN.pow(18)));
         } else {
-            logger.info("Admin: 150 PAY (estimated)");
-            logger.info("UserA: 1000 PAY (estimated)");
-            logger.info("UserB: 150 PAY (estimated)");
+            logger.info("Admin: 100 PAY (estimated)"); // 300 발행 - 200 전송
+            logger.info("UserA: 500 PAY (estimated)"); // 500 입금
+            logger.info("UserB: 300 PAY (estimated)"); // 300 입금 + 200 받음 - 200 출금
         }
     }
     
